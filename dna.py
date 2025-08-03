@@ -1,24 +1,70 @@
 class DnaSeq:
     def __init__(self, accession, seq):
-        pass
+        if not accession or not seq:
+            raise ValueError("Accession and sequence can not be empty")
+        self.accession = accession
+        self.seq = seq
 
     def __len__(self):
-        pass
+        return len(self.seq)
 
     def __str__(self):
-        pass
+        return f"<DnaSeq accession={self.accession}>"
 
 
-def read_dna(  ):
-    pass
+def read_dna(filename):
+    sequences = []
+    current_accession = None
+    current_seq = []
+    
+    with open(filename, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if not line:  # Skip empty lines
+                continue
+            if line.startswith('>'):
+                if current_accession is not None:
+                    # Only add if we have both accesssion and sequence 
+                    if current_seq:
+                        sequences.append(DnaSeq(current_accession, ''.join(current_seq)))
+                current_accession = line[1:]  # Remove '>' character
+                current_seq = []
+            else:
+                current_seq.append(line.upper())  # Store sequence in uppercase
+
+    # Add the last sequence if it exists
+    if current_accession is not None and current_seq:
+        sequences.append(DnaSeq(current_accession, ''.join(current_seq)))
+    
+    return sequences
 
 
-def check_exact_overlap(  ):
-    pass
+def check_exact_overlap(a, b, min_length=10):
+    """
+    Find the longest exact overlap between suffix of a and prefix of b.
+    Returns lenght of overlap if found (>= min_lenght) otherwise 0.
+    """
+
+    max_possible = min(len(a), len(b))
+    for L in range(max_possible, min_length - 1, -1):
+        if a.seq[-L:] == b.seq[:L]:
+            return L
+    return 0    
 
 
-def overlaps(  ):
-    pass
+def overlaps(seq_list, overlap_func):
+    result = {}
+    for a in seq_list:
+        overlaps_for_a = {}
+        for b in seq_list:
+            if a.accession == b.accession:
+                continue      # Don't compare with self
+            overlap_len = overlap_func(a, b)
+            if overlap_len > 0:
+                overlaps_for_a[b.accession] = overlap_len
+        if overlaps_for_a: # Only add if there are any overlaps
+            result[a.accession] = overlaps_for_a
+    return result           
 
 
 #
@@ -89,3 +135,6 @@ def test_all():
     test_reading()
     test_overlap()
     print('Yay, all good')
+
+if __name__ == "__main__":
+    test_all()    
